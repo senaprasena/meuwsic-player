@@ -39,3 +39,6 @@ next-env.d.ts
 
 # external scripts and development plans
 external-scripts/
+
+#reusable modules
+detachable_modules
