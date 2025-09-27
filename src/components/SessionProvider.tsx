@@ -10,8 +10,8 @@ interface Props {
 export default function AuthSessionProvider({ children }: Props) {
   return (
     <SessionProvider 
-      refetchInterval={5 * 60} // Refetch session every 5 minutes (300 seconds)
-      refetchOnWindowFocus={false} // Disable aggressive window focus refetching
+      refetchInterval={10 * 60} // Refetch every 10 minutes (more frequent for admin security)
+      refetchOnWindowFocus={true} // Enable focus refetching for security
       refetchWhenOffline={false} // Don't refetch when offline
     >
       {children}

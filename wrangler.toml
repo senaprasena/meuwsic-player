@@ -1,0 +1,9 @@
+name = "meuwsic"
+compatibility_date = "2024-01-01"
+
+[env.production]
+name = "meuwsic"
+
+[[env.production.r2_buckets]]
+binding = "AUDIO_BUCKET"
+bucket_name = "meuwsic-audio"

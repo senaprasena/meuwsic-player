@@ -16,25 +16,35 @@ import {
 } from 'lucide-react'
 
 interface Track {
-  id: number
+  id: string
   title: string
-  artist: string
-  filename: string
+  artist: {
+    id: string
+    name: string
+    imageUrl: string | null
+  } | null
+  album: {
+    id: string
+    title: string
+    coverImageUrl: string | null
+    releaseDate: Date | null
+  } | null
+  fileName: string
+  fileUrl: string
   duration: number
+  fileSize: number
+  format: string
+  bitrate: number | null
+  sampleRate: number | null
+  year: number | null
+  trackNumber: number | null
+  playCount: number
+  createdAt: Date
 }
 
-const TRACKS: Track[] = [
-  { id: 1, title: "A Morning Hum (Remix)", artist: "HMS", filename: "A Morning Hum (Remix) - HMS.mp3", duration: 0 },
-  { id: 2, title: "Possesive Cyborg Maid", artist: "HMS", filename: "Possesive Cyborg Maid - HMS.mp3", duration: 0 },
-  { id: 3, title: "Nur Wenn Ich Will (AI-Prinz)", artist: "HMS", filename: "\u201eNur Wenn Ich Will (AI-Prinz)\u201c - HMS.mp3", duration: 0 },
-  { id: 4, title: "冬の神話 (Fuyu no Shinwa) — Winter Myth", artist: "HMS", filename: "\u300c冬の神話 (Fuyu no Shinwa) — Winter Myth\u300d - HMS.mp3", duration: 0 },
-  { id: 5, title: "ポモドーロ・ラブ - 真道もも (Pomodoro LOVE! - Mado Momo)", artist: "HMS", filename: "ポモドーロ・ラブ - 真道もも (Pomodoro LOVE! - Mado Momo) - HMS.mp3", duration: 0 },
-  { id: 6, title: "花の香りに (Hana no Kaori ni) Glam Rock Live", artist: "差乃間・ミッチ", filename: "🌸 花の香りに (Hana no Kaori ni) 🌸 Glam Rock Live - 差乃間・ミッチ.mp3", duration: 0 },
-  { id: 7, title: "I Am the Dream Dreaming Me", artist: "HMS", filename: "🔥 _I Am the Dream Dreaming Me_ - HMS.mp3", duration: 0 }
-]
-
 export default function MusicPlayer() {
-  const [currentTrack, setCurrentTrack] = useState<Track>(TRACKS[0])
+  const [tracks, setTracks] = useState<Track[]>([])
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -43,13 +53,35 @@ export default function MusicPlayer() {
   const [isShuffled, setIsShuffled] = useState(false)
   const [repeatMode, setRepeatMode] = useState<'none' | 'one' | 'all'>('none')
   const [showPlaylist, setShowPlaylist] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   
   const audioRef = useRef<HTMLAudioElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
 
+  // Fetch tracks from database
+  useEffect(() => {
+    const fetchTracks = async () => {
+      try {
+        const response = await fetch('/api/tracks')
+        const data = await response.json()
+        
+        if (data.success && data.tracks.length > 0) {
+          setTracks(data.tracks)
+          setCurrentTrack(data.tracks[0])
+        }
+      } catch (error) {
+        console.error('Error fetching tracks:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTracks()
+  }, [])
+
   useEffect(() => {
     const audio = audioRef.current
-    if (!audio) return
+    if (!audio || !currentTrack) return
 
     const updateTime = () => setCurrentTime(audio.currentTime)
     const updateDuration = () => {
@@ -66,8 +98,8 @@ export default function MusicPlayer() {
         handleNext()
       } else if (repeatMode === 'none') {
         // Check if we're at the last song (only when shuffle is OFF)
-        const currentIndex = TRACKS.findIndex(track => track.id === currentTrack.id)
-        if (currentIndex === TRACKS.length - 1) {
+        const currentIndex = tracks.findIndex(track => track.id === currentTrack.id)
+        if (currentIndex === tracks.length - 1) {
           // Stay on the last song and stop playing
           setIsPlaying(false)
         } else {
@@ -100,7 +132,7 @@ export default function MusicPlayer() {
       audio.removeEventListener('pause', handlePause)
       audio.removeEventListener('loadstart', handleLoadStart)
     }
-  }, [currentTrack, repeatMode, isShuffled])
+  }, [currentTrack, repeatMode, isShuffled, tracks])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -133,19 +165,21 @@ export default function MusicPlayer() {
   }
 
   const handleNext = () => {
-    const currentIndex = TRACKS.findIndex(track => track.id === currentTrack.id)
+    if (!currentTrack || tracks.length === 0) return
+    
+    const currentIndex = tracks.findIndex(track => track.id === currentTrack.id)
     let nextIndex
     
     if (isShuffled) {
       // Shuffle mode: always pick random song and continue playing
       do {
-        nextIndex = Math.floor(Math.random() * TRACKS.length)
-      } while (nextIndex === currentIndex && TRACKS.length > 1)
+        nextIndex = Math.floor(Math.random() * tracks.length)
+      } while (nextIndex === currentIndex && tracks.length > 1)
     } else if (repeatMode === 'all') {
-      nextIndex = (currentIndex + 1) % TRACKS.length
+      nextIndex = (currentIndex + 1) % tracks.length
     } else {
       // When repeat is 'none' and shuffle is OFF, respect boundaries
-      if (currentIndex === TRACKS.length - 1) {
+      if (currentIndex === tracks.length - 1) {
         nextIndex = 0 // Go to first track but don't auto-play
       } else {
         nextIndex = currentIndex + 1
@@ -153,7 +187,7 @@ export default function MusicPlayer() {
     }
     
     const wasPlaying = isPlaying
-    setCurrentTrack(TRACKS[nextIndex])
+    setCurrentTrack(tracks[nextIndex])
     
     // For shuffle mode, always continue playing. For others, respect the wasPlaying state
     if (wasPlaying || isShuffled) {
@@ -169,26 +203,28 @@ export default function MusicPlayer() {
   }
 
   const handlePrevious = () => {
-    const currentIndex = TRACKS.findIndex(track => track.id === currentTrack.id)
+    if (!currentTrack || tracks.length === 0) return
+    
+    const currentIndex = tracks.findIndex(track => track.id === currentTrack.id)
     let prevIndex
     
     if (isShuffled) {
       do {
-        prevIndex = Math.floor(Math.random() * TRACKS.length)
-      } while (prevIndex === currentIndex && TRACKS.length > 1)
+        prevIndex = Math.floor(Math.random() * tracks.length)
+      } while (prevIndex === currentIndex && tracks.length > 1)
     } else if (repeatMode === 'all') {
-      prevIndex = currentIndex === 0 ? TRACKS.length - 1 : currentIndex - 1
+      prevIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1
     } else {
       // When repeat is 'none', allow navigation but don't auto-play at boundaries
       if (currentIndex === 0) {
-        prevIndex = TRACKS.length - 1 // Go to last track but don't auto-play
+        prevIndex = tracks.length - 1 // Go to last track but don't auto-play
       } else {
         prevIndex = currentIndex - 1
       }
     }
     
     const wasPlaying = isPlaying
-    setCurrentTrack(TRACKS[prevIndex])
+    setCurrentTrack(tracks[prevIndex])
     
     // Always continue playing if was playing, regardless of boundaries for manual navigation
     if (wasPlaying) {
@@ -247,19 +283,127 @@ export default function MusicPlayer() {
   }
 
   const selectTrack = (track: Track) => {
-    const wasPlaying = isPlaying
     setCurrentTrack(track)
-    setShowPlaylist(false)
-    if (wasPlaying) {
-      setTimeout(async () => {
-        try {
-          await audioRef.current?.play()
-        } catch (error) {
-          console.error('Error playing selected track:', error)
-          setIsPlaying(false)
-        }
-      }, 100)
-    }
+    // Auto-play the selected track
+    setTimeout(async () => {
+      try {
+        await audioRef.current?.play()
+      } catch (error) {
+        console.error('Error playing selected track:', error)
+        setIsPlaying(false)
+      }
+    }, 100)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-black/30 backdrop-blur-lg rounded-3xl p-8 w-full max-w-md shadow-2xl border border-white/10"
+        >
+          <div className="text-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4"
+            >
+              <Music className="w-10 h-10 text-white" />
+            </motion.div>
+            <h1 className="text-2xl font-bold text-white mb-2">Loading Music...</h1>
+            <p className="text-gray-300">Fetching your tracks from the database</p>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  if (!currentTrack || tracks.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-black/30 backdrop-blur-lg rounded-3xl p-8 w-full max-w-md shadow-2xl border border-white/10"
+        >
+          {/* Header */}
+          <div className="text-center mb-8">
+            <motion.div
+              className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4"
+            >
+              <Music className="w-10 h-10 text-white" />
+            </motion.div>
+            <h1 className="text-2xl font-bold text-white mb-2">Meuwsic Player</h1>
+          </div>
+
+          {/* Track Info */}
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-white mb-2 truncate">
+              No tracks found
+            </h2>
+            <p className="text-gray-300 truncate mb-4">
+              No Artist
+            </p>
+            
+            {/* Static Visualizer */}
+            <div className="h-6 flex items-end justify-center space-x-1 mb-2">
+              <div className="flex items-end justify-center space-x-1">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-1 h-1 bg-white/20 rounded-full"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-6">
+            <div className="w-full h-2 bg-white/20 rounded-full mb-2 relative">
+              <div className="h-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full" style={{ width: '0%' }} />
+            </div>
+            <div className="flex justify-between text-sm text-gray-300">
+              <span>0:00</span>
+              <span>0:00</span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center justify-center space-x-6 mb-6">
+            <button className="p-2 rounded-full bg-white/10 text-white/50 cursor-not-allowed">
+              <Shuffle className="w-5 h-5" />
+            </button>
+
+            <button className="p-3 bg-white/10 rounded-full text-white/50 cursor-not-allowed">
+              <SkipBack className="w-6 h-6" />
+            </button>
+
+            <button className="p-4 bg-gradient-to-r from-purple-500/50 to-pink-500/50 rounded-full text-white/50 cursor-not-allowed">
+              <Play className="w-8 h-8" />
+            </button>
+
+            <button className="p-3 bg-white/10 rounded-full text-white/50 cursor-not-allowed">
+              <SkipForward className="w-6 h-6" />
+            </button>
+
+            <button className="p-2 rounded-full bg-white/10 text-white/50 cursor-not-allowed">
+              <Repeat className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Volume Control */}
+          <div className="flex items-center space-x-3">
+            <VolumeX className="w-5 h-5 text-white/50" />
+            <div className="flex-1 h-2 bg-white/20 rounded-full">
+              <div className="h-full bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full" style={{ width: '0%' }} />
+            </div>
+            <Volume2 className="w-5 h-5 text-white/50" />
+          </div>
+        </motion.div>
+      </div>
+    )
   }
 
   return (
@@ -286,7 +430,9 @@ export default function MusicPlayer() {
           <h2 className="text-xl font-semibold text-white mb-2 truncate">
             {currentTrack.title}
           </h2>
-          <p className="text-gray-300 truncate mb-4">{currentTrack.artist}</p>
+          <p className="text-gray-300 truncate mb-4">
+            {currentTrack.artist?.name || 'Unknown Artist'}
+          </p>
           
           {/* Fixed Visualizer Container */}
           <div className="h-6 flex items-end justify-center space-x-1 mb-2">
@@ -427,7 +573,7 @@ export default function MusicPlayer() {
               exit={{ opacity: 0, height: 0 }}
               className="mt-4 space-y-2 max-h-60 overflow-y-auto"
             >
-              {TRACKS.map((track) => (
+              {tracks.map((track) => (
                 <motion.button
                   key={track.id}
                   whileHover={{ scale: 1.02 }}
@@ -440,19 +586,19 @@ export default function MusicPlayer() {
                   }`}
                 >
                   <div className="text-white font-medium truncate">{track.title}</div>
-                  <div className="text-gray-300 text-sm truncate">{track.artist}</div>
+                  <div className="text-gray-300 text-sm truncate">
+                    {track.artist?.name || 'Unknown Artist'}
+                  </div>
                 </motion.button>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Equalizer Animation - Removed from bottom */}
-
         {/* Audio Element */}
         <audio
           ref={audioRef}
-          src={`/musicol/${encodeURIComponent(currentTrack.filename)}`}
+          src={currentTrack ? currentTrack.fileUrl : ''}
           preload="metadata"
           controls={false}
           crossOrigin="anonymous"

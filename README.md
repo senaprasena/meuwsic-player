@@ -35,7 +35,7 @@ A modern, responsive music player built with Next.js, React, and Tailwind CSS.
    npm run dev
    ```
 
-3. Open [http://localhost:3001](http://localhost:3001) in your browser
+3. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## Music Files
 

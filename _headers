@@ -1,0 +1,8 @@
+/musicol/*
+  Content-Type: audio/mpeg
+  Accept-Ranges: bytes
+  Content-Disposition: inline
+  Cache-Control: public, max-age=31536000
+
+/api/*
+  X-Robots-Tag: noindex

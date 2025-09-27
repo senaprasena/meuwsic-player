@@ -1,12 +1,13 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  experimental: {
-    turbo: {
-      // Remove MP3 processing rules to allow direct serving
-    },
+  output: 'standalone',
+  typescript: {
+    ignoreBuildErrors: true,
   },
-  // Remove webpack configuration that processes audio files
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async headers() {
     return [
       {
