@@ -8,3 +8,5 @@ pages_build_output_dir = ".next"
 [[r2_buckets]]
 binding = "AUDIO_BUCKET"
 bucket_name = "meuwsic-audio"
+
+# Force deployment trigger

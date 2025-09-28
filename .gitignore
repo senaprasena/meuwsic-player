@@ -42,3 +42,16 @@ external-scripts/
 
 #reusable modules
 detachable_modules
+
+# Cloudflare
+.wrangler
+
+# Build cache and temporary files (prevent large cache files in deployment)
+.next/cache/
+cache/
+*.cache
+.cache/
+
+# Webpack cache (prevent 25+ MiB cache files)
+.next/cache/webpack/
+cache/webpack/
