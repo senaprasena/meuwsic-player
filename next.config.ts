@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Disable webpack caching completely for Cloudflare Pages
+  webpack: (config, { dev, isServer }) => {
+    // Disable webpack caching in production builds
+    if (!dev) {
+      config.cache = false
+    }
+    return config
+  },
   // Disable build cache for Cloudflare Pages deployment
   generateBuildId: async () => {
     return 'build-' + Date.now()
