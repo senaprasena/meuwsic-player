@@ -4,9 +4,7 @@ compatibility_date = "2024-01-01"
 # Cloudflare Pages configuration
 pages_build_output_dir = ".next"
 
-[env.production]
-name = "meuwsic"
-
-[[env.production.r2_buckets]]
+# R2 bucket bindings for Pages
+[[r2_buckets]]
 binding = "AUDIO_BUCKET"
 bucket_name = "meuwsic-audio"
