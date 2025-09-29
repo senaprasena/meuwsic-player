@@ -1,8 +1,8 @@
 name = "meuwsic"
 compatibility_date = "2024-01-01"
 
-# Cloudflare Pages configuration
-pages_build_output_dir = ".next"
+# Cloudflare Pages configuration - use 'out' directory for static export
+pages_build_output_dir = "out"
 
 # R2 bucket bindings for Pages
 [[r2_buckets]]

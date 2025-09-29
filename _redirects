@@ -1,11 +1,9 @@
 # API routes
 /api/* /api/:splat 200
 
-# Next.js static files - serve the root page
+# Next.js static export files
 / /index.html 200
+/admin/ /admin/index.html 200
 
-# Admin page
-/admin /admin.html 200
-
-# Fallback for other routes to _not-found
-/* /_not-found.html 404
+# Fallback for other routes to 404
+/* /404.html 404
