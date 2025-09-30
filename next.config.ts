@@ -19,12 +19,8 @@ const nextConfig: NextConfig = {
   generateBuildId: async () => {
     return 'build-' + Date.now()
   },
-  // Optimize for Cloudflare Pages - use export for static files
-  output: 'export',
-  trailingSlash: true,
-  images: {
-    unoptimized: true
-  },
+  // Enable API routes for full-stack functionality
+  output: 'standalone',
   async headers() {
     return [
       {
